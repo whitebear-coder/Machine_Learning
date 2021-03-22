@@ -1,0 +1,39 @@
+import pandas as pd
+import numpy as np
+from sklearn.tree import DecisionTreeClassifier
+import matplotlib.pyplot as plt
+
+data = pd.read_csv("iris.csv")
+data = np.array(data)     # 变成array形式
+np.random.shuffle(data)
+percent = 0.5
+
+
+def train_test_splits(data, percent):
+    train_size = int(data.shape[0]*percent)
+    return data[:train_size], data[train_size:]
+
+
+train, test = train_test_splits(data, percent)
+x_train = train[:, 0:train.shape[1] - 1]
+y_train = train[:, train.shape[1]-1]
+x_test = test[:, 0:test.shape[1] - 1]
+y_test = test[:, test.shape[1]-1]
+# 利用随机森林进行训练
+forest = DecisionTreeClassifier()
+forest.fit(x_train, y_train)
+
+#
+num = y_test.shape[0]
+score = forest.score(x_test, y_test)
+result = forest.predict(x_test)
+print(y_test, result)
+plt.figure()
+# 只取前一百条可视化，因为数据太多了
+plt.plot(np.arange(num), y_test, "go-", label="True value")
+plt.plot(np.arange(num), result, "ro-", label="Predict value")
+plt.title(f"RandomForest---score:{score}")
+# plt.legend(loc="best")
+plt.show()
+
+
