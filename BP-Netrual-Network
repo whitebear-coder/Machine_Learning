@@ -1,0 +1,125 @@
+import numpy as np
+import pandas as pd
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
+
+# 数据导入
+data = pd.read_csv('housing.csv')
+data = np.array(data)
+np.random.shuffle(data)
+percent = 0.8
+# 数据归一化处理
+
+def train_test_splits(data, percent):
+    train_size = int(data.shape[0]*percent)
+    return data[:train_size], data[train_size:]
+
+
+train, test = train_test_splits(data, percent)
+x_train = train[:, 0:train.shape[1] - 1]
+y_train = train[:, train.shape[1] - 1]
+
+x_scaler = MinMaxScaler(feature_range=(-1, 1))
+y_scaler = MinMaxScaler(feature_range=(-1, 1))
+x_train = x_train.reshape(-1, 1)
+y_train = y_train.reshape(-1, 1)
+x_train = x_scaler.fit_transform(x_train)
+y_train = y_scaler.fit_transform(y_train)
+x_train = x_train.reshape(-1, 3)
+# 方便后续矩阵乘法的操作
+sample_in = x_train.T
+sample_out = y_train.T
+
+# 网络参数
+print(x_train.shape)
+# 最大迭代次数
+max_epochs = 6000
+# 学习效率
+learn_rate = 0.001
+# 训练终止条件
+mse_final = 0.65
+sample_number = x_train.shape[0]
+input_number = 3
+output_number = 1
+hidden_unit_number = 50
+
+# 输入层到隐藏层权重和偏置单元 8*3的
+w1 = 0.5 * np.random.rand(hidden_unit_number, input_number) - 0.1
+# 8*1
+b1 = 0.5 * np.random.rand(hidden_unit_number, 1) - 0.1
+
+# 隐藏层到输出层的权重和偏置单元 2*8的
+w2 = 0.5 * np.random.rand(output_number, hidden_unit_number) - 0.1
+# 2*1
+b2 = 0.5 * np.random.rand(output_number, 1) - 0.1
+
+# 定义激活函数，本案例中未设置输出层的激活函数
+def sigmoid(z):
+    return 1.0/(1+np.exp(-z))
+
+
+# 开始训练
+mse_history = []
+for i in range(max_epochs):
+    # FP，前馈网络过程
+    hidden_out = sigmoid(np.dot(w1, sample_in) + b1)
+    network_out = np.dot(w2, hidden_out) + b2
+    # 误差
+    err = sample_out - network_out
+    mse = np.average(np.square(err))
+    mse_history.append(mse)
+    # if mse < mse_final:
+    #     break
+
+    # BP，反馈网络过程
+    delta2 = -err
+    delta1 = np.dot(w2.T, delta2) * hidden_out * (1 - hidden_out)
+
+    delta_w2 = np.dot(delta2, hidden_out.T)
+    delta_b2 = np.dot(delta2, np.ones((sample_number, 1)))
+
+    delta_w1 = np.dot(delta1, sample_in.T)
+    delta_b1 = np.dot(delta1, np.ones((sample_number, 1)))
+
+    # 更新权重
+    w2 -= learn_rate * delta_w2
+    b2 -= learn_rate * delta_b2
+    w1 -= learn_rate * delta_w1
+    b1 -= learn_rate * delta_b1
+
+# 指数平滑处理
+# mse_history1g = np.log10(mse_history[1:])
+mse_history = mse_history[1:]
+# 反转获取实际值
+network_out = y_scaler.inverse_transform(network_out.T)
+sample_out = y_scaler.inverse_transform(y_train)
+
+
+plt.rcParams['font.sans-serif'] = ['SimHei']     # 用来正常显示中文标签
+plt.rcParams['axes.unicode_minus'] = False       # 用来正常显示负号
+# 数据
+# 误差曲线图
+
+plt.figure(1)
+plt.plot(mse_history, color='green', label='训练误差')
+# plt.plot(mse_history1g, color='red')
+plt.xlabel('迭代次数')
+plt.ylabel('误差')
+plt.title('训练误差图')
+plt.show()
+
+# 实际与预测
+plt.figure(2)
+plt.plot(network_out, color='green', label='实际值')
+plt.plot(sample_out, color='red', label='预测值')
+plt.xlabel('时间')
+plt.ylabel('房价')
+plt.title('预测结果图')
+plt.legend()
+plt.show()
+
+
+
+
+
