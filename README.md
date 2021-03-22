@@ -1,4 +1,4 @@
 # Machine_Learning
   SVM
-  \<br>Random forest
+  Random forest\<b
   BP Netrual Network
